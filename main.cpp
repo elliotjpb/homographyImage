@@ -80,47 +80,68 @@ int main(int argc, char** argv){
       std::cout << " --(!) Error reading images " << std::endl; return -1;
   }
 
-   //variable to store homography
-   Mat H_12, H_23, H_34;
-   //Finding homography of all images
-   H_12 = Homography(im_1,im_2);
-   H_23 = Homography(im_2,im_3);
-   H_34 = Homography(im_3,im_4);
+	//Finding homography between each image
+	Mat H_12, H_23, H_34;
 
-   std::cout << H_34 << '\n';
+	H_12 = Homography(im_1,im_2);
+	H_23 = Homography(im_2,im_3);
+	H_34 = Homography(im_3,im_4);
 
-      Mat warpImage2;
-      Mat warpImage3;
-      Mat warpImage4;
-      //warpPerspective(cap2frame, warpImage2, homography, Size(cap1frame.cols*2, cap1frame.rows*2), INTER_CUBIC);
-      //warping the second video cap2frame so it matches with the first one.
-      //size is defined as the final video size
-      warpPerspective(im_2, warpImage2, H_12, Size(im_1.cols*2, im_1.rows*2), INTER_CUBIC);
-      warpPerspective(im_3, warpImage3, H_23, Size(im_1.cols*2, im_1.rows*2), INTER_CUBIC);
-      warpPerspective(im_4, warpImage4, H_34, Size(im_1.cols*2, im_1.rows*2), INTER_CUBIC);
-      //std::cout << "cols " << (cap1frame.cols*2) << "rows " << (cap1frame.rows*2) << '\n';
-      //final is the final canvas where both videos will be warped onto.
-      Mat final(Size(im_1.cols*5 + im_1.cols, im_1.rows*5),CV_8UC3);
-      //Mat final(Size(cap1frame.cols*2 + cap1frame.cols, cap1frame.rows*2),CV_8UC3);
-      //Using roi getting the relivent areas of each video.
-      Mat roi1(final, Rect(0, 0, im_1.cols, im_1.rows));
-      Mat roi2(final, Rect(0, 0, warpImage2.cols, warpImage2.rows));
-      Mat roi3(final, Rect(0, 0, warpImage3.cols, warpImage3.rows));
-      Mat roi4(final, Rect(0, 0, warpImage4.cols, warpImage4.rows));
-      //warping images on to the canvases which are linked with the final canvas.
-      warpImage4.copyTo(roi4);
-      warpImage3.copyTo(roi3);
-      warpImage2.copyTo(roi2);
-      im_1.copyTo(roi1);
+	std::cout << H_34 << '\n';
 
+	Mat warpImage2;
+	Mat warpImage3;
+	Mat warpImage4;
+
+	//Canvas where images will be warped onto.
+	Mat final(Size(im_1.cols*4, im_1.rows*4),CV_8UC3);
+
+	//size is defined as the final video size
+	warpPerspective(im_2, warpImage2, H_12, Size(im_1.cols*2, im_1.rows*2), INTER_CUBIC);
+	warpPerspective(im_3, warpImage3, (H_23*H_12), Size(im_1.cols*2, im_1.rows*2), INTER_CUBIC);
+	warpPerspective(im_4, warpImage4, (H_34*H_23*H_12), Size(im_4.cols*2, im_4.rows*2), INTER_CUBIC);
+
+	//Getting the relivent (roi) areas of each image.
+	Mat roi1(final, Rect(0, 0, im_1.cols, im_1.rows));
+	Mat roi2(final, Rect(0, 0, warpImage2.cols, warpImage2.rows));
+	Mat roi3(final, Rect(0, 0, warpImage3.cols, warpImage3.rows));
+	Mat roi4(final, Rect(0, 0, warpImage4.cols, warpImage4.rows));
+
+	//Copying relevant area to canvas
+	warpImage4.copyTo(roi4);
+	warpImage3.copyTo(roi3);
+	warpImage2.copyTo(roi2);
+	im_1.copyTo(roi1);
+
+imwrite("result.png", final);
+
+waitKey(0);
+return 0;
+}
+
+
+      //
+      // im_1.copyTo(final, M_1);
+      // warpImage2.copyTo(final, M_2);
+      // warpImage2.copyTo(final, M_3);
+      // warpImage2.copyTo(final, M_4);
+
+      //imshow ("result", warpImage2);
       //int rows = final.rows;
       //int cols = final.cols;
       //std::cout << "rows " << rows << "cols " << cols << '\n';
-      imshow ("Result", final);
-      //imshow ("result", im_4);
+      //imshow ("Result", final);
 
-    //if(waitKey(30) >= 0) break;
-    //}
-    waitKey(0);
-    return 0;
-}
+       // Mat M_1(Size(warpImage2.cols, warpImage2.rows),CV_8UC3);
+       // Mat M_2(Size(warpImage2.cols, warpImage2.rows),CV_8UC3);
+       // Mat M_3(Size(warpImage2.cols, warpImage2.rows),CV_8UC3);
+       // Mat M_4(Size(warpImage2.cols, warpImage2.rows),CV_8UC3);
+       //
+       // warpPerspective(M_1, M_2, H_12, M_1.size( ));
+       // warpPerspective(M_2, M_3, H_23*H_12, M_1.size( ));
+       // warpPerspective(M_3, M_4, H_34*H_23*H_12, M_1.size( ));
+
+//        warpPerspective (roi1, roi2, H_12, roi1.size());
+//        warpPerspective (roi2, roi3, H_23*H_12, roi2.size());
+//        warpPerspective (roi3, roi4, H_34*H_23*H_12, roi3.size( ));
+      //warping images on to the canvases which are linked with the final canvas.
