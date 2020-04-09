@@ -13,8 +13,8 @@
 using namespace cv::xfeatures2d;
 using namespace std;
 using namespace cv;
-//To get homography from images passed in. Matching points in the images.
 
+//Get homography from images passed in. Matching points in the images.
 Mat Homography(Mat image1, Mat image2){
     Mat I_1 = image1;
     Mat I_2 = image2;
@@ -56,7 +56,6 @@ Mat Homography(Mat image1, Mat image2){
     	}
 
     	Mat H = findHomography( source_pts, dst_pts, CV_RANSAC );
-    	//cout << H_12 << endl;
       return H;
 }
 
@@ -64,7 +63,6 @@ void readme(){
     std::cout << " Usage: ./SURF_descriptor <img1> <img2>" << std::endl;
 }
 
-/** @function main */
 int main(int argc, char** argv){
 
   if (argc != 5){
@@ -80,26 +78,32 @@ int main(int argc, char** argv){
       std::cout << " --(!) Error reading images " << std::endl; return -1;
   }
 
-	//Finding homography between each image
-	Mat H_12, H_23, H_34;
 
+	Mat H_12, H_23, H_34;
+  //Finding homography between each image
 	H_12 = Homography(im_1,im_2);
 	H_23 = Homography(im_2,im_3);
 	H_34 = Homography(im_3,im_4);
-
-	std::cout << H_34 << '\n';
 
 	Mat warpImage2;
 	Mat warpImage3;
 	Mat warpImage4;
 
-	//Canvas where images will be warped onto.
-	Mat final(Size(im_1.cols*4, im_1.rows*4),CV_8UC3);
+  Mat v_12 = H_12;
+  Mat v_23 = H_23 * H_12;
+  Mat v_34 = H_34 * H_23 * H_12;
+
+  //Canvas where images will be warped onto.
+  Mat final(Size(im_1.cols*4, im_1.rows*2),CV_8UC3);
 
 	//size is defined as the final video size
 	warpPerspective(im_2, warpImage2, H_12, Size(im_1.cols*2, im_1.rows*2), INTER_CUBIC);
 	warpPerspective(im_3, warpImage3, (H_23*H_12), Size(im_1.cols*2, im_1.rows*2), INTER_CUBIC);
-	warpPerspective(im_4, warpImage4, (H_34*H_23*H_12), Size(im_4.cols*2, im_4.rows*2), INTER_CUBIC);
+	warpPerspective(im_4, warpImage4, (H_34*H_23*H_12), Size(im_1.cols*2, im_1.rows*2), INTER_CUBIC);
+
+  // warpPerspective(im_2, warpImage2, H_12, Size(v_12.size()), INTER_CUBIC);
+  // warpPerspective(im_3, warpImage3, (H_23*H_12), Size(v_23.size()), INTER_CUBIC);
+  // warpPerspective(im_4, warpImage4, (H_34*H_23*H_12), Size(v_34.size()), INTER_CUBIC);
 
 	//Getting the relivent (roi) areas of each image.
 	Mat roi1(final, Rect(0, 0, im_1.cols, im_1.rows));
@@ -113,10 +117,11 @@ int main(int argc, char** argv){
 	warpImage2.copyTo(roi2);
 	im_1.copyTo(roi1);
 
-imwrite("result.png", final);
+	imwrite("result.png", final);
 
-waitKey(0);
-return 0;
+	waitKey(0);
+  destroyAllWindows();
+	return 0;
 }
 
 
